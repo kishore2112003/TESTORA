@@ -1,0 +1,189 @@
+@import "@fontsource-variable/inter";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces & Layout */
+    --background: 210 40% 98%;
+    --surface: 0 0% 100%;
+    --surface-raised: 210 40% 96.5%;
+
+    /* Typography & Hierarchy */
+    --foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 35%;
+
+    /* Borders */
+    --border: 214 32% 91%;
+    --border-strong: 215 25% 82%;
+
+    /* Brand Scale (Teal to Navy derived from Testora Logo) */
+    --brand-50: 184 100% 97%;
+    --brand-100: 184 100% 92%;
+    --brand-200: 184 95% 82%;
+    --brand-300: 184 90% 70%;
+    --brand-400: 184 88% 54%;
+    --brand-500: 183 100% 40%; /* #00C2CB */
+    --brand-600: 185 100% 32%;
+    --brand-700: 187 100% 25%;
+    --brand-800: 214 78% 28%;
+    --brand-900: 222 68% 14%; /* #0B1B3D */
+
+    /* Primary & Interactive (Teal background with Navy text for 8.4:1 contrast) */
+    --primary: 183 100% 40%;
+    --primary-foreground: 222 70% 8%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --input: 214 32% 91%;
+    --ring: 183 100% 40%;
+
+    /* Semantic Status Pair Tokens (WCAG AA Compliant) */
+    --status-pass-bg: 142 70% 94%;
+    --status-pass-fg: 142 76% 20%;
+
+    --status-fail-bg: 0 85% 95%;
+    --status-fail-fg: 0 72% 32%;
+
+    --status-blocked-bg: 38 90% 93%;
+    --status-blocked-fg: 32 81% 29%;
+
+    --status-skipped-bg: 215 30% 92%;
+    --status-skipped-fg: 215 25% 27%;
+
+    --status-not-run-bg: 199 80% 93%;
+    --status-not-run-fg: 199 89% 28%;
+
+    /* Radii */
+    --radius-card: 12px;
+    --radius-control: 8px;
+    --radius-full: 9999px;
+  }
+
+  .dark {
+    /* Surfaces & Layout */
+    --background: 222 47% 5%;
+    --surface: 222 44% 8%;
+    --surface-raised: 222 40% 11%;
+
+    /* Typography & Hierarchy */
+    --foreground: 210 40% 98%;
+    --muted: 222 36% 13%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Borders */
+    --border: 222 30% 16%;
+    --border-strong: 222 30% 24%;
+
+    /* Brand Scale */
+    --brand-50: 184 100% 10%;
+    --brand-100: 184 100% 16%;
+    --brand-200: 184 95% 24%;
+    --brand-300: 184 90% 32%;
+    --brand-400: 184 88% 42%;
+    --brand-500: 183 100% 45%;
+    --brand-600: 185 100% 55%;
+    --brand-700: 187 100% 68%;
+    --brand-800: 214 78% 75%;
+    --brand-900: 222 68% 90%;
+
+    /* Primary & Interactive */
+    --primary: 183 100% 45%;
+    --primary-foreground: 222 70% 6%;
+
+    --secondary: 222 36% 14%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 222 36% 14%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --card: 222 44% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 44% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --input: 222 30% 18%;
+    --ring: 183 100% 45%;
+
+    /* Semantic Status Pair Tokens (WCAG AA Compliant) */
+    --status-pass-bg: 142 50% 12%;
+    --status-pass-fg: 142 70% 70%;
+
+    --status-fail-bg: 0 50% 14%;
+    --status-fail-fg: 0 85% 75%;
+
+    --status-blocked-bg: 38 60% 13%;
+    --status-blocked-fg: 38 90% 70%;
+
+    --status-skipped-bg: 215 25% 15%;
+    --status-skipped-fg: 215 20% 72%;
+
+    --status-not-run-bg: 199 50% 14%;
+    --status-not-run-fg: 199 80% 72%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "cv11" 1;
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 4-Step Elevation Scale */
+  .elevation-xs {
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  }
+  .dark .elevation-xs {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .elevation-sm {
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  }
+  .dark .elevation-sm {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .elevation-md {
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  }
+  .dark .elevation-md {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .elevation-lg {
+    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  }
+  .dark .elevation-lg {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+}
