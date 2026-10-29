@@ -6,7 +6,13 @@ from app.core.db import get_db
 from app.core.security import create_access_token
 from app.models.user import User
 from app.routers.deps import get_current_user, get_current_user_optional
-from app.schemas.user import LoginResponse, UserLogin, UserRegister, UserResponse
+from app.schemas.user import (
+    ChangePasswordRequest,
+    LoginResponse,
+    UserLogin,
+    UserRegister,
+    UserResponse,
+)
 from app.services import user_service
 
 router = APIRouter()
@@ -130,3 +136,23 @@ async def logout(response: Response):
 )
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post(
+    "/change-password",
+    summary="Change user password",
+    description="Changes password for currently authenticated user after verifying current password.",
+)
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await user_service.change_user_password(
+        db=db,
+        user=current_user,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
+    )
+    return {"message": "Password changed successfully"}
+

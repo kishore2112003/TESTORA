@@ -193,3 +193,17 @@ erDiagram
 - [x] Implemented the admin seed script (`app.seed` / `seed.py`) driven by environment variables.
 - [x] Configured CORS middleware with credentials enabled for Vite dev server origin (`http://localhost:5173`).
 - [x] Added automated pytest test suite covering all authentication flows, permissions, cookies, and fresh database migrations.
+
+### Phase 2: Frontend Shell & Password Management
+- [x] Added `POST /api/v1/auth/change-password` requiring current password verification with Argon2, enforcing minimum 8 characters, and preventing reuse of current password.
+- [x] Created comprehensive backend tests for change-password (success, wrong current password -> 400, short password -> 422, same password -> 400, unauthenticated -> 401, old password invalidation / new password login).
+- [x] Scaffolding `/frontend` with Vite, React 18, TypeScript (strict mode), and Tailwind CSS with `@/` path alias.
+- [x] Integrated shadcn/ui components (`Button`, `Input`, `Label`, `Card`, `DropdownMenu`, `Sheet`, `Sonner` toaster).
+- [x] Configured Vite dev server proxy routing `/api` requests to backend on port 8000.
+- [x] Created `src/lib/api.ts` fetch wrapper with `credentials: "include"`, typed errors, and global 401 redirect to `/login`.
+- [x] Implemented `AuthProvider` backed by TanStack Query querying `/api/v1/auth/me` and clearing cache on `logout()`.
+- [x] Built `ProtectedRoute` with loading indicator and return-path memory.
+- [x] Created `LoginPage` with show/hide password toggle, inline credential errors, and validation.
+- [x] Built responsive `AppLayout` featuring collapsible desktop sidebar, mobile slide-over drawer, top bar with dynamic route title, theme switcher (persisted with system preference fallback and anti-flicker head script), and user profile dropdown.
+- [x] Implemented placeholder views for Dashboard, New Ticket Session, View Sessions, and Export, plus custom 404 page.
+- [x] Created `SettingsPage` with read-only profile, change password form wired to API with Sonner toasts, theme selector, and disabled AI section.

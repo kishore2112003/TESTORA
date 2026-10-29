@@ -1,5 +1,6 @@
 import uuid
 from typing import Optional
+from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -67,4 +68,29 @@ async def authenticate_user(
         return None
     if not verify_password(password, user.password_hash):
         return None
+    return user
+
+
+async def change_user_password(
+    db: AsyncSession,
+    user: User,
+    current_password: str,
+    new_password: str,
+) -> User:
+    """Change user password after verifying current password and ensuring new password differs."""
+    if not verify_password(current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password",
+        )
+
+    if current_password == new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password cannot be the same as the current password",
+        )
+
+    user.password_hash = get_password_hash(new_password)
+    await db.commit()
+    await db.refresh(user)
     return user

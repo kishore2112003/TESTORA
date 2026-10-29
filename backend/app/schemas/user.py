@@ -65,3 +65,13 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStrType] = None
     role: Optional[str] = None
     password: Optional[str] = Field(None, min_length=6, max_length=128)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1, description="Current password")
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="New password (minimum 8 characters)",
+    )

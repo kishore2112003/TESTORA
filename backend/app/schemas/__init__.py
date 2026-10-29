@@ -1,4 +1,5 @@
 from app.schemas.user import (
+    ChangePasswordRequest,
     LoginResponse,
     Token,
     UserBase,
@@ -16,4 +17,5 @@ __all__ = [
     "Token",
     "LoginResponse",
     "UserUpdate",
+    "ChangePasswordRequest",
 ]

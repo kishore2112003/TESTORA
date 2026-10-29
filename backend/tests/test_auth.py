@@ -56,7 +56,7 @@ async def test_subsequent_registration_requires_admin(client: AsyncClient):
     admin_data = {
         "name": "Primary Admin",
         "email": "admin@example.com",
-        "password": "AdminPassword123!",
+        "password": "Admin@123",
     }
     res = await client.post(f"{AUTH_PREFIX}/register", json=admin_data)
     assert res.status_code == 201
@@ -253,3 +253,80 @@ async def test_user_settings_created_for_every_user(client: AsyncClient, db_sess
     assert setting is not None
     assert setting.user_id == created.id
     assert setting.default_environment == "development"
+
+
+@pytest.mark.asyncio
+async def test_change_password_unauthenticated_fails(client: AsyncClient):
+    """Calling /change-password unauthenticated returns 401."""
+    res = await client.post(
+        f"{AUTH_PREFIX}/change-password",
+        json={"current_password": "OldPassword123!", "new_password": "NewPassword123!"},
+    )
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_change_password_validation_and_flow(client: AsyncClient):
+    """Verify change-password flow: success, wrong current, weak new, same password, and subsequent logins."""
+    user_data = {
+        "name": "Password Changer",
+        "email": "pw_changer@testora.local",
+        "password": "InitialPassword123!",
+    }
+    await client.post(f"{AUTH_PREFIX}/register", json=user_data)
+
+    # 1. Log in
+    login_res = await client.post(
+        f"{AUTH_PREFIX}/login",
+        json={"email": user_data["email"], "password": user_data["password"]},
+    )
+    assert login_res.status_code == 200
+    client.cookies.update(login_res.cookies)
+
+    # 2. Reject short new password (< 8 chars) -> 422
+    short_res = await client.post(
+        f"{AUTH_PREFIX}/change-password",
+        json={"current_password": "InitialPassword123!", "new_password": "short"},
+    )
+    assert short_res.status_code == 422
+
+    # 3. Reject wrong current password -> 400
+    wrong_curr_res = await client.post(
+        f"{AUTH_PREFIX}/change-password",
+        json={"current_password": "WrongPassword123!", "new_password": "BrandNewPassword123!"},
+    )
+    assert wrong_curr_res.status_code == 400
+    assert "incorrect current password" in wrong_curr_res.json()["detail"].lower()
+
+    # 4. Reject new password equal to current password -> 400
+    same_res = await client.post(
+        f"{AUTH_PREFIX}/change-password",
+        json={"current_password": "InitialPassword123!", "new_password": "InitialPassword123!"},
+    )
+    assert same_res.status_code == 400
+    assert "cannot be the same" in same_res.json()["detail"].lower()
+
+    # 5. Successful change -> 200
+    new_pw = "BrandNewPassword123!"
+    success_res = await client.post(
+        f"{AUTH_PREFIX}/change-password",
+        json={"current_password": "InitialPassword123!", "new_password": new_pw},
+    )
+    assert success_res.status_code == 200
+    assert "password changed successfully" in success_res.json()["message"].lower()
+
+    # 6. Clear session and verify old password fails, new password succeeds
+    client.cookies.clear()
+
+    old_login = await client.post(
+        f"{AUTH_PREFIX}/login",
+        json={"email": user_data["email"], "password": "InitialPassword123!"},
+    )
+    assert old_login.status_code == 401
+
+    new_login = await client.post(
+        f"{AUTH_PREFIX}/login",
+        json={"email": user_data["email"], "password": new_pw},
+    )
+    assert new_login.status_code == 200
+    assert new_login.json()["user"]["email"] == user_data["email"]

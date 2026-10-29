@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # Seed Admin Defaults
     FIRST_SUPERUSER_EMAIL: str = "admin@testora.local"
-    FIRST_SUPERUSER_PASSWORD: str = "AdminPassword123!"
+    FIRST_SUPERUSER_PASSWORD: str = "Admin@123"
     FIRST_SUPERUSER_NAME: str = "Administrator"
 
     # AI Configuration (Anthropic API - backend only)
