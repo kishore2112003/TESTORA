@@ -21,9 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Authentication Router
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth-v1"])
+# Include Authentication Router (versioned)
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 
 
 @app.get("/", tags=["system"])

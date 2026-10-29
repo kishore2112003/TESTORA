@@ -1,20 +1,34 @@
+import uuid
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.main import app
+from app.models.user_setting import UserSetting
+from app.services import user_service
+
+AUTH_PREFIX = f"{settings.API_V1_STR}/auth"
 
 
 @pytest.mark.asyncio
 async def test_root_and_health(client: AsyncClient):
-    """Test public health and welcome endpoints."""
+    """Test public health and welcome endpoints at root without version prefix."""
     res = await client.get("/")
     assert res.status_code == 200
     assert res.json()["app"] == settings.APP_NAME
 
+    # /health stays at root (no prefix) for Docker health checks
     res_health = await client.get("/health")
     assert res_health.status_code == 200
     assert res_health.json()["status"] == "healthy"
+
+
+@pytest.mark.asyncio
+async def test_unprefixed_auth_routes_not_mounted(client: AsyncClient):
+    """Confirm the duplicate unprefixed /auth routes were removed and return 404."""
+    res = await client.post("/auth/login", json={"email": "test@testora.local", "password": "pass"})
+    assert res.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -26,7 +40,7 @@ async def test_first_user_registration_becomes_admin(client: AsyncClient):
         "password": "SecurePassword123!",
         "role": "user",  # Even if requested as 'user', first user becomes 'admin'
     }
-    response = await client.post("/auth/register", json=payload)
+    response = await client.post(f"{AUTH_PREFIX}/register", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data["email"] == "first_admin@testora.local"
@@ -44,7 +58,7 @@ async def test_subsequent_registration_requires_admin(client: AsyncClient):
         "email": "admin@example.com",
         "password": "AdminPassword123!",
     }
-    res = await client.post("/auth/register", json=admin_data)
+    res = await client.post(f"{AUTH_PREFIX}/register", json=admin_data)
     assert res.status_code == 201
     assert res.json()["role"] == "admin"
 
@@ -54,12 +68,12 @@ async def test_subsequent_registration_requires_admin(client: AsyncClient):
         "email": "jane@example.com",
         "password": "Password123!",
     }
-    res_unauth = await client.post("/auth/register", json=user_data)
+    res_unauth = await client.post(f"{AUTH_PREFIX}/register", json=user_data)
     assert res_unauth.status_code == 401
 
     # 3. Log in as admin
     login_res = await client.post(
-        "/auth/login",
+        f"{AUTH_PREFIX}/login",
         json={"email": admin_data["email"], "password": admin_data["password"]},
     )
     assert login_res.status_code == 200
@@ -67,7 +81,7 @@ async def test_subsequent_registration_requires_admin(client: AsyncClient):
 
     # Register Jane Doe while authenticated as admin
     res_admin_register = await client.post(
-        "/auth/register",
+        f"{AUTH_PREFIX}/register",
         json=user_data,
     )
     assert res_admin_register.status_code == 201
@@ -79,7 +93,7 @@ async def test_subsequent_registration_requires_admin(client: AsyncClient):
 
     # 4. Log in as Jane Doe (non-admin)
     jane_login = await client.post(
-        "/auth/login",
+        f"{AUTH_PREFIX}/login",
         json={"email": user_data["email"], "password": user_data["password"]},
     )
     assert jane_login.status_code == 200
@@ -87,7 +101,7 @@ async def test_subsequent_registration_requires_admin(client: AsyncClient):
 
     # Jane attempts to register a 3rd user -> should fail 403 Forbidden
     res_forbidden = await client.post(
-        "/auth/register",
+        f"{AUTH_PREFIX}/register",
         json={
             "name": "Bob Smith",
             "email": "bob@example.com",
@@ -106,11 +120,11 @@ async def test_duplicate_email_registration_fails(client: AsyncClient):
         "email": "duplicate@testora.local",
         "password": "Password123!",
     }
-    res1 = await client.post("/auth/register", json=user_data)
+    res1 = await client.post(f"{AUTH_PREFIX}/register", json=user_data)
     assert res1.status_code == 201
 
     # Attempt to register again with same email
-    res2 = await client.post("/auth/register", json=user_data)
+    res2 = await client.post(f"{AUTH_PREFIX}/register", json=user_data)
     assert res2.status_code == 400
     assert "already exists" in res2.json()["detail"].lower()
 
@@ -123,11 +137,11 @@ async def test_login_flow_and_cookie_generation(client: AsyncClient):
         "email": "authtester@testora.local",
         "password": "SuperSecretPassword123!",
     }
-    await client.post("/auth/register", json=credentials)
+    await client.post(f"{AUTH_PREFIX}/register", json=credentials)
 
     # Valid login
     login_res = await client.post(
-        "/auth/login",
+        f"{AUTH_PREFIX}/login",
         json={"email": credentials["email"], "password": credentials["password"]},
     )
     assert login_res.status_code == 200
@@ -138,7 +152,7 @@ async def test_login_flow_and_cookie_generation(client: AsyncClient):
 
     # Invalid password
     bad_pass_res = await client.post(
-        "/auth/login",
+        f"{AUTH_PREFIX}/login",
         json={"email": credentials["email"], "password": "WrongPassword"},
     )
     assert bad_pass_res.status_code == 401
@@ -146,7 +160,7 @@ async def test_login_flow_and_cookie_generation(client: AsyncClient):
 
     # Non-existent user
     non_existent_res = await client.post(
-        "/auth/login",
+        f"{AUTH_PREFIX}/login",
         json={"email": "nobody@testora.local", "password": "Password123!"},
     )
     assert non_existent_res.status_code == 401
@@ -154,9 +168,9 @@ async def test_login_flow_and_cookie_generation(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_protected_me_endpoint_requires_cookie(client: AsyncClient):
-    """GET /auth/me returns 401 without cookie, 200 with valid cookie."""
+    """GET /api/v1/auth/me returns 401 without cookie, 200 with valid cookie."""
     # Attempt without any cookie -> 401
-    unauth_res = await client.get("/auth/me")
+    unauth_res = await client.get(f"{AUTH_PREFIX}/me")
     assert unauth_res.status_code == 401
     assert "not authenticated" in unauth_res.json()["detail"].lower()
 
@@ -166,16 +180,16 @@ async def test_protected_me_endpoint_requires_cookie(client: AsyncClient):
         "email": "cookietester@testora.local",
         "password": "Password123!",
     }
-    await client.post("/auth/register", json=user_data)
+    await client.post(f"{AUTH_PREFIX}/register", json=user_data)
     login_res = await client.post(
-        "/auth/login",
+        f"{AUTH_PREFIX}/login",
         json={"email": user_data["email"], "password": user_data["password"]},
     )
     assert login_res.status_code == 200
     client.cookies.update(login_res.cookies)
 
-    # Query /auth/me with session cookie
-    me_res = await client.get("/auth/me")
+    # Query /me with session cookie
+    me_res = await client.get(f"{AUTH_PREFIX}/me")
     assert me_res.status_code == 200
     user_profile = me_res.json()
     assert user_profile["email"] == user_data["email"]
@@ -185,26 +199,26 @@ async def test_protected_me_endpoint_requires_cookie(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_logout_clears_cookie(client: AsyncClient):
-    """POST /auth/logout clears the session cookie and prevents subsequent authenticated calls."""
+    """POST /api/v1/auth/logout clears the session cookie and prevents subsequent authenticated calls."""
     user_data = {
         "name": "Logout Tester",
         "email": "logout@testora.local",
         "password": "Password123!",
     }
-    await client.post("/auth/register", json=user_data)
+    await client.post(f"{AUTH_PREFIX}/register", json=user_data)
     login_res = await client.post(
-        "/auth/login",
+        f"{AUTH_PREFIX}/login",
         json={"email": user_data["email"], "password": user_data["password"]},
     )
     assert login_res.status_code == 200
     client.cookies.update(login_res.cookies)
 
     # Verify session is working
-    res_before = await client.get("/auth/me")
+    res_before = await client.get(f"{AUTH_PREFIX}/me")
     assert res_before.status_code == 200
 
     # Call logout
-    logout_res = await client.post("/auth/logout")
+    logout_res = await client.post(f"{AUTH_PREFIX}/logout")
     assert logout_res.status_code == 200
     assert logout_res.json()["message"] == "Logged out successfully"
 
@@ -216,5 +230,26 @@ async def test_logout_clears_cookie(client: AsyncClient):
     client.cookies.clear()
 
     # Attempting to call /auth/me without valid cookie returns 401
-    res_after = await client.get("/auth/me")
+    res_after = await client.get(f"{AUTH_PREFIX}/me")
     assert res_after.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_user_settings_created_for_every_user(client: AsyncClient, db_session: AsyncSession):
+    """Confirm user_service.create_user automatically creates a user_settings row for each user."""
+    # Test via create_user directly
+    created = await user_service.create_user(
+        db=db_session,
+        name="Settings Test User",
+        email="settings_user@testora.local",
+        password="Password123!",
+        role="user",
+    )
+    assert created.id is not None
+
+    # Check user_settings row in database
+    result = await db_session.execute(select(UserSetting).where(UserSetting.user_id == created.id))
+    setting = result.scalar_one_or_none()
+    assert setting is not None
+    assert setting.user_id == created.id
+    assert setting.default_environment == "development"
