@@ -182,3 +182,14 @@ erDiagram
 - [x] Created `PROJECT_BRIEF.md` containing product specs, database model, and constraints.
 - [x] Established directory structure (`/backend`, `/frontend`, `/reference`).
 - [x] Created project `README.md`, `.gitignore`, and `.env.example` stubs.
+
+### Phase 1: Backend Foundation & Authentication
+- [x] Initialized FastAPI application structure in `/backend` (`app/core`, `app/models`, `app/schemas`, `app/routers`, `app/services`).
+- [x] Created all SQLAlchemy models matching the project data model (`User`, `Session`, `TestCase`, `TestStep`, `Attachment`, `ExportLog`, `UserSetting`).
+- [x] Configured Alembic with async migration support for both SQLite and PostgreSQL. Generated and applied the initial schema migration.
+- [x] Implemented Argon2 password hashing and JWT authentication via `httpOnly`, `SameSite=Lax` session cookies.
+- [x] Implemented `/auth/register` (first user becomes admin, subsequent registrations require admin credentials), `/auth/login`, `/auth/logout`, and `/auth/me`.
+- [x] Built the `get_current_user` dependency enforcing authentication and role verification.
+- [x] Implemented the admin seed script (`app.seed` / `seed.py`) driven by environment variables.
+- [x] Configured CORS middleware with credentials enabled for Vite dev server origin (`http://localhost:5173`).
+- [x] Added automated pytest test suite covering all authentication flows, permissions, cookies, and fresh database migrations.
