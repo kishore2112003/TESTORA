@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
-from sqlalchemy import Date, DateTime, ForeignKey, JSON, String, Uuid, func
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, JSON, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -30,6 +30,18 @@ class Session(Base):
     environment: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     test_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     testing_types: Mapped[List[Any]] = mapped_column(JSON, nullable=False, default=list)
+    tc_prefix: Mapped[str] = mapped_column(
+        String(12),
+        nullable=False,
+        default="TC",
+        server_default="TC",
+    )
+    tc_counter: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="draft")
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),

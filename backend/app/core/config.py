@@ -44,7 +44,14 @@ class Settings(BaseSettings):
 
     # File Storage / Attachments
     UPLOAD_DIR: str = "./uploads"
-    MAX_FILE_SIZE_MB: int = 10
+    MAX_FILE_SIZE_MB: int = 5
+
+    @property
+    def upload_dir_path(self) -> Path:
+        p = Path(self.UPLOAD_DIR)
+        if p.is_absolute():
+            return p
+        return BACKEND_DIR / p
 
     @property
     def cors_origins_list(self) -> List[str]:

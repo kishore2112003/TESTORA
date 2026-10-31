@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import auth
+from app.routers import attachments, auth, cases, sessions
 
 app = FastAPI(
     title=settings.APP_NAME + " API",
@@ -21,8 +21,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include Authentication Router (versioned)
+# Include Routers (versioned under /api/v1)
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(sessions.router, prefix=f"{settings.API_V1_STR}/sessions", tags=["sessions"])
+app.include_router(cases.router, prefix=f"{settings.API_V1_STR}/cases", tags=["cases"])
+app.include_router(attachments.router, prefix=f"{settings.API_V1_STR}/attachments", tags=["attachments"])
 
 
 @app.get("/", tags=["system"])

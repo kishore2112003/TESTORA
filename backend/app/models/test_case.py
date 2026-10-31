@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 
 class TestCase(Base):
     __tablename__ = "test_cases"
+    __table_args__ = (
+        UniqueConstraint("session_id", "tc_id", name="uq_test_cases_session_id_tc_id"),
+        Index("ix_test_cases_session_id_position", "session_id", "position"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),
